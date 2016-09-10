@@ -1,5 +1,25 @@
+contract EntitlementRegistry{function get(string _name)constant returns(address );function getOrThrow(string _name)constant returns(address );}
+contract Entitlement{function isEntitled(address _address)constant returns(bool );}
 
-class Oracorrect{
+import "oraclizeapi.sol";
+
+contract Oracorrect is usingOraclize {
+
+  // BlockOne ID bindings
+
+  // The address below is for the Edgware network only
+  EntitlementRegistry entitlementRegistry = EntitlementRegistry(0xe5483c010d0f50ac93a341ef5428244c84043b54);
+
+  function getEntitlement() constant returns(address) {
+      return entitlementRegistry.getOrThrow("com.tr.oracleyo");
+  }
+
+  modifier entitledUsersOnly {
+    if (!Entitlement(getEntitlement()).isEntitled(msg.sender)) throw;
+    _;
+  }
+
+  // Your implementation goes here
 
 	uint nonce;
 	struct Provider{
@@ -24,7 +44,7 @@ class Oracorrect{
 		//TODO....
 	}
 
-	public function onData(uint id, uint value){
+	public function onData(uint id, uint value) entitledUsersOnly{
 		var request = requests[id];
 		if(!request.providers[msg.value]){
 			throw;
@@ -43,11 +63,12 @@ class Oracorrect{
 	}
 
 	/////////////////////////////////  user facing  ///////////////////////////////////////////
-	public function query(uint stake){
+	public function query(uint stake, string currency1, string currency2){
 		nonce++;
 		mapping(address => bool) providers;
 		uint numProviders = 0;
 		for(provider in providerList){
+			// TODO: Also check whether they can provide data about the currency pairs entered
 			provider.query(nonce,stake);
 			providers[provider] = true;
 			numProviders ++;
