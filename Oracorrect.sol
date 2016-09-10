@@ -19,16 +19,21 @@ contract Oracorrect is usingOraclize {
     _;
   }
 
-  // Your implementation goes here
+  // Start of Oracorrect
 
 	uint nonce;
 	struct Provider{
 		address account;
 		uint truthCoins;
+		string apistring;
 	}
-	address[] providerList;
+	public address[] providerList;
 
 	mapping(address => Provider) providers;
+	
+	public uint totalStaked;
+	public uint totalOracles;
+	public uint priceEstimate;
 
 	struct Request{
 		mapping(address => bool) providers;
@@ -39,36 +44,32 @@ contract Oracorrect is usingOraclize {
 	mapping(uint => Request) requests;
 
 /////////////////////////////////  provider facing  ///////////////////////////////////////////
-	public function register(){
-		providers[msg.sender] = {account:msg.sender,truthCoins:0};
-		//TODO....
+	public function register(string api, uint newStake) entitledUsersOnly{
+		providers[msg.sender] = {account:msg.sender,truthCoins:newStake, apistring: api};
+		providerList.push(msg.sender);
+		totalOracles++;
+		totalStaked = totalStaked + newStake;
+		// TODO: Deregister
 	}
-
-	public function onData(uint id, uint value) entitledUsersOnly{
-		var request = requests[id];
-		if(!request.providers[msg.value]){
-			throw;
-		}
-		request.providers[msg.value] = false;
-		request.numProvidersLeft--;
-		request.values.push(value);
-
-		if(request.numProvidersLeft == 0){
-			uint total = 0;
-			for(uint i=0;i<request.values;i++){
-				total+= request.values[i];
-			}
-			request.user.onData(total/request.values.length);
-		}
+	
+	function () entitledUsersOnly{
+		// Blank function if anyone sends ether to the contract by mistake. Send it back...
+		throw;
 	}
 
 	/////////////////////////////////  user facing  ///////////////////////////////////////////
-	public function query(uint stake, string currency1, string currency2){
+	public function query(uint stake){  // TODO: Add other currencies
+	    // charge a fee (basically require some ether to call this function)
+    		uint feeCost = totalStaked/1000000;
+    
+    		if (msg.value < feeCost) throw;
+	
 		nonce++;
 		mapping(address => bool) providers;
 		uint numProviders = 0;
+		uint[] priceEstimates;
+		
 		for(provider in providerList){
-			// TODO: Also check whether they can provide data about the currency pairs entered
 			provider.query(nonce,stake);
 			providers[provider] = true;
 			numProviders ++;
@@ -80,12 +81,43 @@ contract Oracorrect is usingOraclize {
 			msg.sender,
 			0
 		};
+		
+		// Call the oracle apis
+
+    	for (uint i; i < numProviders; i++){
+    	    // for demo purposes all staked oracles use oraclize to get their various data providers
+    	    	priceEstimates[i] = oraclize_query("URL", providers[providerList[i]].apistring);
+    	    }
+    	    
+    	    // These are the kind of things used for apistring:
+    	    
+    	    //string poloniexTradestring = currency2+'_'+currency1;
+    	    //string rockTradestring
+    	    //string bitfinexTradestring
+    	    //string yunbiTradestring
+    	    //string krakenTradestring
+    	    
+    	    //"json(https://www.therocktrading.com/api/ticker/"+BTCEUR+").result.0.last"
+    	    //"json(https://poloniex.com/public?command=returnTicker)."+poloniexTradestring+".last"
+    	    //"json(api.kraken.com/0/public/Ticker?pair=ETHUSD).result.XETHZUSD.c.0"
+    	    //"json(https://api.bitfinex.com/v1/pubticker/"+bitfinexTradestring+".last_price")
+    	   
+    	    // set it so that each provider is associated with a different 
+    	    
+    	    
+    // now look for mean and std dev of priceEstimate
+    
+    // reject outliers
+    
+    // pay out to correct who had enough stake and penalise outliers
+    
+    return priceEstimate;
+}
+		
+		
+		
 	}
 	
-	function () {
-		// if anyone sends ether to the contract by mistake send it back...
-		throw;
-	}
 
 
 	
