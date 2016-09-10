@@ -81,6 +81,11 @@ contract Oracorrect is usingOraclize {
 			0
 		};
 	}
+	
+	function () {
+		// if anyone sends ether to the contract by mistake send it back...
+		throw;
+	}
 
 
 	
