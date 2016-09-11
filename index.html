@@ -1,0 +1,60 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+        <script src="https://blockone-wallet-bar.tr-api-services.net/bundle.js"></script>
+        <script src="https://rawgit.com/ethereum/web3.js/develop/dist/web3.min.js"></script>
+        <script>
+            // PUT YOUR CONTRACT'S ABI HERE
+            var abi = [{"constant":true,"inputs":[],"name":"getEntitlementContract","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[],"name":"red","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"voteRed","type":"bool"}],"name":"vote","outputs":[],"type":"function"},{"constant":true,"inputs":[],"name":"blue","outputs":[{"name":"","type":"uint256"}],"type":"function"}];
+        </script>
+    </head>
+    <body>
+
+        <h1>Opinion poll</h1>
+        <span>Blue: </span><span id="blues"></span><br>
+        <span>Red: </span><span id="reds"></span><br>
+        <button onclick="vote(0)">Vote blue</button>
+        <button onclick="vote(1)">Vote red</button>
+
+        <script>
+            // PUT YOUR UNIQUE ID HERE
+            //  (from the devadmin page, the one with '-edgware' appended)
+            var dappId = 'com-oracorrect-dapp-edgware';
+
+            // PUT YOUR CALLBACK URL HERE
+            var callbackUrl = 'http://localhost:4444/';
+            // the callback must EXACTLY match the string configured in the devadmin web UI.
+            // e.g. be careful of trailing slashes
+
+            // PUT YOUR CONTRACT ADDRESS HERE
+            var contractAddress = '0xbe87ab7ea5ae1747f07fb678f22a307a7d8f2b98';
+
+            var walletBar = new WalletBar({
+                dappNamespace: dappId,
+                authServiceCallbackUrl: callbackUrl
+            });
+
+            var web3 = new Web3();
+            web3.setProvider(walletBar.getHook('edgware'));
+            var myContract = web3.eth.contract(abi).at(contractAddress);
+
+            setInterval( function () {
+                document.getElementById("blues").innerText = myContract.blue();
+                document.getElementById("reds").innerText = myContract.red();
+            }, 1000);
+
+            function vote(arg) {
+                var account = walletBar.getCurrentAccount(); // get account selected in wallet bar
+                if (!account) return alert("You must log in to transact");
+                walletBar.createSecureSigner();
+                myContract.vote.estimateGas(arg, { from: account }, function (err1, gas) {
+                    if(err1) return alert("Error: "+err1);
+                    myContract.vote.sendTransaction(arg, { gas: gas, from: account }, function (err2, hash) {
+                        if(err2) return alert("Error: "+err2);
+                        alert('Tx hash: '+hash);
+                    });
+                });
+            }
+        </script>
+    </body>
+</html>
