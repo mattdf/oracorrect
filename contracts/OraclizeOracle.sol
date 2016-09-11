@@ -12,6 +12,7 @@ contract OraclizeOracle  is usingOraclize{
 	}
 
 	function registerWithOracleReceiver(Oracorrect _oracorrect,string api, uint stake){
+		// if(owner != msg.sender)throw;
 		oracorrect = _oracorrect;
 		oracorrect.register(api,stake);
 	}
