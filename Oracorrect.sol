@@ -18,7 +18,7 @@ contract Oracorrect{
     if (!Entitlement(getEntitlement()).isEntitled(msg.sender)) throw; 
 		//TODO not msg.sender but owner of contract as entitlement can not be managed for contract (at least not yet)
 		//shoud the owener address be signed or should be the account to be used at stake (provider address just being the contract to gather and receive data from? )
-    _;
+    _
   }
 
 
@@ -136,8 +136,5 @@ function register(string api, uint newStake) entitledUsersOnly {
 		
 		
 	}
-
-}
-
 
 }
