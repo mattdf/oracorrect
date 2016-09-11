@@ -1,0 +1,135 @@
+<html>
+    <head>
+          <link rel="stylesheet" href="/css/bootstrap-dark.css">
+          <link rel="stylesheet" href="/css/style.css">
+        <script src="https://blockone-wallet-bar.tr-api-services.net/bundle.js"></script>
+        <script src="https://rawgit.com/ethereum/web3.js/develop/dist/web3.min.js"></script>
+        <script>
+            // PUT YOUR CONTRACT'S ABI HERE
+            var abi = [{"constant":false,"inputs":[{"name":"myid","type":"bytes32"},{"name":"result","type":"string"},{"name":"proof","type":"bytes"}],"name":"__callback","outputs":[],"type":"function"},{"constant":false,"inputs":[{"name":"id","type":"uint256"},{"name":"queryString","type":"string"}],"name":"query","outputs":[],"type":"function"},{"constant":false,"inputs":[{"name":"_oracorrect","type":"address"},{"name":"api","type":"string"},{"name":"stake","type":"uint256"}],"name":"registerWithOracleReceiver","outputs":[],"type":"function"},{"inputs":[],"type":"constructor"}];
+
+        </script>
+    </head>
+
+<body>
+  <div class="row service-container">
+    <div class="col-lg-12 service-header">
+      <div class="row top-nav navbar-fixed-top">
+        <div class="container">
+          
+            <h3>Truth of Stake </h3>
+            
+        </div>
+      </div>
+      <div class="row header">
+        <div class="container">
+          <div class="avatar img-container col-lg-2 col-md-2 col-sm-2 hidden-xs">
+            <img src="/images/app.png" class="service-icon">
+          </div>
+          <div class="col-lg-10 col-md-10 col-sm-10 col-xs-12 dialog-description">
+            <h1 style="font-size:50px;" class="service-title">Oracle Registration:</h1>
+             <form onsubmit ="register(apistring, stake, oracleaddress)">
+            <p>Select the currencies for which you would like the current exchange rate:</p>
+
+            <p>API address to register:
+              <input type="text" name="apistring">
+            </p>
+
+            <p>Stake you are willing to back the address with:
+              <input type="number" name="stake"> in TruthCoin
+            </p>
+
+            <p>Contract address of your Oracle
+              <input type="text" name="oracleaddress">
+            </p>
+
+
+
+            
+          <div class="form-group row buttons-container">
+            <div class="col-lg-4 col-xs-4">
+              <input type="submit" class="btn btn-block clear-btn" value="Register">
+            </div>
+
+          </div>
+          </form>
+
+
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-6 col-md-12 col-xs-12">
+        <h2>Currently Staked Oracles</h2>
+        <!--- So here I need to put in as much info as is publically available about the staked oracles-->
+        <span>Live oracle services: </span><span id="oraclesLive"></span><br>
+        <span>Total ether at stake: </span><span id="etherStaked"></span><br>
+         </div>
+               <div class="col-lg-6 col-md-12 col-xs-12">
+        <h2>Previous Result</h2>
+        <!--- For loop of all the different oracles and what they reported?-->
+        <span>Currency Pair: </span>ETHUSD</span><br>
+        <span>Consensus Price: </span><span id="previousPrice"></span><br>
+
+         </div>
+
+      </div>
+
+
+              </div>
+
+        <script>
+            // PUT YOUR UNIQUE ID HERE
+            //  (from the devadmin page, the one with '-edgware' appended)
+            var dappId = 'com-tr-oracleyo-edgware';
+
+            // PUT YOUR CALLBACK URL HERE
+            var callbackUrl = 'http://localhost:9999/';
+            // the callback must EXACTLY match the string configured in the devadmin web UI.
+            // e.g. be careful of trailing slashes
+
+            // PUT YOUR CONTRACT ADDRESS HERE
+            var contractAddress = '0x21e2ec5a9506f9ad7dbefdb39d09aa7306160f1d';
+
+            var walletBar = new WalletBar({
+                dappNamespace: dappId,
+                authServiceCallbackUrl: callbackUrl
+            });
+
+            var web3 = new Web3();
+            web3.setProvider(walletBar.getHook('edgware'));
+            var myContract = web3.eth.contract(abi).at(contractAddress);
+
+            setInterval( function () {
+                // will update this once we know what variables are available in contract
+                document.getElementById("oraclesLive").innerText = myContract.totalOracles();
+                document.getElementById("etherStaked").innerText = myContract.totalStaked();
+                document.getElementById("previousPrice").innerText = myContract.priceEstimate();
+            }, 1000);
+
+            function register(apistring, stake, oracleaddress) {
+                var api = apistring.value;
+                var commitedStake = stake.value;
+                var ownerAddress = oracleaddress.value;
+
+                alert(ownerAddress);
+
+                // myContract.query actually currently only set up for ETH USD price... 
+
+                var account = walletBar.getCurrentAccount(); // get account selected in wallet bar
+                if (!account) return alert("You must log in to transact");
+                walletBar.createSecureSigner();
+                myContract.registerWithOracleReceiver.estimateGas(stake, { from: account }, function (err1, gas) {
+                    if(err1) return alert("Error: "+err1);
+                    myContract.registerWithOracleReceiver.sendTransaction(ownerAddress, api, commitedString, { gas: gas, from: account }, function (err2, hash) {
+                        if(err2) return alert("Error: "+err2);
+                        alert('Tx hash: '+hash);
+                    });
+                });
+                return false;
+            }
+        </script>
+    </body>
+</html>
