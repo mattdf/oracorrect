@@ -1,4 +1,5 @@
 import "oraclizeapi.sol";
+import "OracleInterface.sol";
 
 contract OraclizeOracle  is usingOraclize{
 
