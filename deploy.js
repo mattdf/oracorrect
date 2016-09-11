@@ -9,7 +9,7 @@ function deploy(contractName, callback){
 	var code = contractInfos[contractName]["bytecode"];
 
 	console.log("--------------------- " + contractName + " -------------------------");
-	console.log(abi);
+	console.log(JSON.stringify(abi));
 	console.log("---------------------------------------------------");
 	var owner = "0xc398f897de0c263b25526872c89bf7f2a7e068ec";
 
