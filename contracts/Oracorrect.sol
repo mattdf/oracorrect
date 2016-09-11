@@ -47,6 +47,7 @@ contract Oracorrect{
 		uint numProvidersLeft;
 		OracleReceiver user;
 		uint[] values;
+		address[] availableProviders;
 	}
 	
 	
@@ -82,17 +83,34 @@ function register(string api, uint newStake) entitledUsersOnly {
 
 		if(request.numProvidersLeft == 0){
 			uint total = 0;
+			uint squaredtotal = 0;
 			for(uint i=0;i<request.values.length;i++){
 				total+= request.values[i];
+				squaredtotal += request.values[i]*request.values[i];
 			}
 			// find mean
-			request.user.onData(id, total/request.values.length);
+			uint mean = total/request.values.length;
+			request.user.onData(id, mean);
+			priceEstimate = mean;
 			// find std deviation
+			uint variance = squaredtotal - total*total;
 			
-			
-			// reject outliers
+			// now check if any of the values squared fall outside the 25th and 75th percentile limits (0.675 s.d.)
+			for(uint; i<request.values.length;i++){
+				uint diff = mean*mean - request.values[i]*request.values[i]; 
+				if(1000*1000*diff*diff > 675*675*variance*variance){
+					// value was an outlier
+					address penalised = request.availableProviders[i];
+				}
+				else{
+					address payOut = request.availableProviders[i];
+					// payOut.send(oracleFee);
+				}
 
-			// pay out to correct who had enough stake and penalise outliers
+				
+			}
+
+
 			
 			
 		}
@@ -132,6 +150,7 @@ function register(string api, uint newStake) entitledUsersOnly {
 			//TODO pass fee (msg.value)
 			providerAddress.query(nonce,providers[providerAddress].apistring);
 			requests[nonce].numProvidersLeft ++;
+			requests[nonce].availableProviders.push(providerAddress);
 		}
 		
 		
