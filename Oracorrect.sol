@@ -1,6 +1,8 @@
 contract EntitlementRegistry{function get(string _name)constant returns(address );function getOrThrow(string _name)constant returns(address );}
 contract Entitlement{function isEntitled(address _address)constant returns(bool );}
 
+import "OracleInterface.sol";
+
 contract Oracorrect{
 
   // BlockOne ID bindings
@@ -19,6 +21,9 @@ contract Oracorrect{
     _;
   }
 
+
+
+
   // Start of Oracorrect
 
 	uint nonce;
@@ -28,31 +33,34 @@ contract Oracorrect{
 		string apistring;
 	}
 
-	public address[] providerList;
+	Oracle[] public providerList;
 
 	mapping(address => Provider) providers;
 	
-	public uint totalStaked;
-	public uint totalOracles;
-	public uint priceEstimate;
+	uint public totalStaked;
+	uint public totalOracles;
+	uint public priceEstimate;
+
 
 	struct Request{
-		mapping(address => bool)  providersUsed;
+		mapping(address => bool) providersUsed;
 		uint numProvidersLeft;
-		address user;
-		[]uint values;
+		OracleReceiver user;
+		uint[] values;
 	}
+	
+	
 
 	mapping(uint => Request) requests;
 
-	public function Oracorrect(){
+	function Oracorrect(){
 		
 	}
 
 /////////////////////////////////  provider facing  ///////////////////////////////////////////
-public function register(string api, uint newStake) entitledUsersOnly{
-		providers[msg.sender] = {account:msg.sender,truthCoins:newStake, apistring: api};
-		providerList.push(msg.sender);
+function register(string api, uint newStake) entitledUsersOnly {
+		providers[msg.sender] = Provider(msg.sender,newStake, api);
+		providerList.push(Oracle(msg.sender));
 		totalOracles++;
 		totalStaked = totalStaked + newStake;
 		// TODO: Deregister
@@ -63,31 +71,37 @@ public function register(string api, uint newStake) entitledUsersOnly{
 		throw;
 	}
 
-	public function onData(uint id, uint value){
+	function onData(uint id, uint value){
 		var request = requests[id];
-		if(!request.providers[msg.value]){
+		if(!request.providersUsed[msg.sender]){
 			throw;
 		}
-		request.providers[msg.value] = false;
+		request.providersUsed[msg.sender] = false;
 		request.numProvidersLeft--;
 		request.values.push(value);
 
 		if(request.numProvidersLeft == 0){
 			uint total = 0;
-			for(uint i=0;i<request.values;i++){
+			for(uint i=0;i<request.values.length;i++){
 				total+= request.values[i];
 			}
+			// find mean
 			request.user.onData(id, total/request.values.length);
+			// find std deviation
+			
+			
+			// reject outliers
+
+			// pay out to correct who had enough stake and penalise outliers
+			
+			
 		}
-		// now look for mean and std dev of priceEstimate
 
-		// reject outliers
 
-		// pay out to correct who had enough stake and penalise outliers
 	}
 
 	/////////////////////////////////  user facing  ///////////////////////////////////////////
-	public function query(uint stake){  
+	function query(uint stake){  
 		// charge a fee (basically require some ether to call this function)
 		uint feeCost = totalStaked/1000000;
 
@@ -96,8 +110,7 @@ public function register(string api, uint newStake) entitledUsersOnly{
 		nonce++;
 		mapping(address => bool) providersUsed;
 		uint numProviders = 0;
-		uint[] priceEstimates;
-
+		
 		// These are the kind of things used for apistring:
 		
 		//string poloniexTradestring = currency2+'_'+currency1;
@@ -112,22 +125,19 @@ public function register(string api, uint newStake) entitledUsersOnly{
 		//"json(https://api.bitfinex.com/v1/pubticker/"+bitfinexTradestring+".last_price")
 		
 		// set it so that each provider is associated with a different 
-		
-		
+		requests[nonce].user = OracleReceiver(msg.sender);
 		for(uint i = 0; i < providerList.length; i++){
 			var providerAddress = providerList[i];
-			providersUsed[providerAddress] = true;
+			requests[nonce].providersUsed[providerAddress] = true;
 			//TODO pass fee (msg.value)
 			providerAddress.query(nonce,providers[providerAddress].apistring);
-			numProviders ++;
+			requests[nonce].numProvidersLeft ++;
 		}
 		
-		requests[nonce] = {
-			providersUsed : providersUsed,
-			numProviders : numProviders,
-			user :msg.sender
-		};
 		
 	}
+
+}
+
 
 }
