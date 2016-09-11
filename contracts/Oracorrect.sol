@@ -5,6 +5,11 @@ import "OracleInterface.sol";
 
 contract Oracorrect{
 
+
+	bool skipBlockOneId;
+	function setToSkipBlockOneId(bool skip){
+		skipBlockOneId = skip;
+	}
   // BlockOne ID bindings
 
   // The address below is for the Edgware network only
@@ -15,7 +20,7 @@ contract Oracorrect{
   }
 
   modifier entitledUsersOnly {
-    if (!Entitlement(getEntitlement()).isEntitled(tx.origin)) throw; 
+    if (!skipBlockOneId && !Entitlement(getEntitlement()).isEntitled(tx.origin)) throw; 
 		//TODO not msg.sender but owner of contract as entitlement can not be managed for contract (at least not yet)
 		//shoud the owener address be signed or should be the account to be used at stake (provider address just being the contract to gather and receive data from? )
 		//for now use tx.origin
